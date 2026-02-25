@@ -115,6 +115,10 @@ const char* data_type_fnnames[] = {
 #include <cuda_fp16.h>
 #include <cuda_fp8.h>
 
+#if CUDART_VERSION >= 13000
+#   define CUDA_CTX_CREATE_V4
+#endif
+
 void _checkError(int rCode, std::string file, int line, std::string desc = "") {
     if (rCode != CUDA_SUCCESS) {
         const char *err;
@@ -161,7 +165,11 @@ template <class T> class GPU_Test {
     GPU_Test(int dev, data_type_t data_type, bool tensors, const char *kernelFile)
         : d_devNumber(dev), d_data_type(data_type), d_tensors(tensors), d_kernelFile(kernelFile){
         checkError(cuDeviceGet(&d_dev, d_devNumber));
+#ifdef CUDA_CTX_CREATE_V4
+	checkError(cuCtxCreate(&d_ctx, &d_ctx_cntxt, 0, d_dev));
+#else
         checkError(cuCtxCreate(&d_ctx, 0, d_dev));
+#endif
 
         bind();
 
@@ -362,6 +370,9 @@ template <class T> class GPU_Test {
     static const int g_blockSize = 16;
 
     CUdevice d_dev;
+#ifdef CUDA_CTX_CREATE_V4
+    CUctxCreateParams d_ctx_cntxt = {};
+#endif
     CUcontext d_ctx;
     CUmodule d_module;
     CUfunction d_function;
