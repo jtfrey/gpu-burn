@@ -24,6 +24,7 @@ override LDFLAGS  += -L${CUDAPATH}/lib/stubs
 override LDFLAGS  += -Wl,-rpath=${CUDAPATH}/lib64
 override LDFLAGS  += -Wl,-rpath=${CUDAPATH}/lib
 override LDFLAGS  += -lcublas
+override LDFLAGS  += -lcublasLt
 override LDFLAGS  += -lcudart
 
 COMPUTE      ?= 50

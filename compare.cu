@@ -32,7 +32,63 @@
 #define EPSILON 0.001f
 #define EPSILOND 0.0000001
 
-extern "C" __global__ void compare(float *C, int *faultyElems, size_t iters) {
+extern "C" __global__ void compare_i8(char *C, int *faultyElems, size_t iters) {
+	size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
+		gridDim.x*blockDim.x + // W
+		blockIdx.x*blockDim.x + threadIdx.x; // X
+
+	int myFaulty = 0;
+	for (size_t i = 1; i < iters; ++i)
+		if (C[myIndex] - C[myIndex + i*iterStep] > 0)
+			myFaulty++;
+
+	atomicAdd(faultyElems, myFaulty);
+}
+
+extern "C" __global__ void compare_i16(short int *C, int *faultyElems, size_t iters) {
+	size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
+		gridDim.x*blockDim.x + // W
+		blockIdx.x*blockDim.x + threadIdx.x; // X
+
+	int myFaulty = 0;
+	for (size_t i = 1; i < iters; ++i)
+		if (C[myIndex] - C[myIndex + i*iterStep] > 0)
+			myFaulty++;
+
+	atomicAdd(faultyElems, myFaulty);
+}
+
+extern "C" __global__ void compare_i32(int *C, int *faultyElems, size_t iters) {
+	size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
+		gridDim.x*blockDim.x + // W
+		blockIdx.x*blockDim.x + threadIdx.x; // X
+
+	int myFaulty = 0;
+	for (size_t i = 1; i < iters; ++i)
+		if (C[myIndex] - C[myIndex + i*iterStep] > 0)
+			myFaulty++;
+
+	atomicAdd(faultyElems, myFaulty);
+}
+
+extern "C" __global__ void compare_i64(long long int *C, int *faultyElems, size_t iters) {
+	size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
+		gridDim.x*blockDim.x + // W
+		blockIdx.x*blockDim.x + threadIdx.x; // X
+
+	int myFaulty = 0;
+	for (size_t i = 1; i < iters; ++i)
+		if (C[myIndex] - C[myIndex + i*iterStep] > 0)
+			myFaulty++;
+
+	atomicAdd(faultyElems, myFaulty);
+}
+
+extern "C" __global__ void compare_r32(float *C, int *faultyElems, size_t iters) {
 	size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
 	size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
 		gridDim.x*blockDim.x + // W
@@ -46,7 +102,7 @@ extern "C" __global__ void compare(float *C, int *faultyElems, size_t iters) {
 	atomicAdd(faultyElems, myFaulty);
 }
 
-extern "C" __global__ void compareD(double *C, int *faultyElems, size_t iters) {
+extern "C" __global__ void compare_r64(double *C, int *faultyElems, size_t iters) {
 	size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
 	size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
 		gridDim.x*blockDim.x + // W
