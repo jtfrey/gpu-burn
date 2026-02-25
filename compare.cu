@@ -27,8 +27,14 @@
  * either expressed or implied, of the FreeBSD Project.
  */
 
+#include <cuda_fp16.h>
+#include <cuda_fp8.h>
+
 // Actually, there are no rounding errors due to results being accumulated in an arbitrary order..
 // Therefore EPSILON = 0.0f is OK
+//#define EPSILON_FP8  __nv_fp8_e4m3(0.001f)
+#define EPSILON_FP8 __nv_cvt_float_to_fp8(0.001f, __NV_SATFINITE, __NV_E4M3)
+#define EPSILON_FP16 __float2half(0.001f)
 #define EPSILON 0.001f
 #define EPSILOND 0.0000001
 
@@ -86,6 +92,39 @@ extern "C" __global__ void compare_i64(long long int *C, int *faultyElems, size_
 			myFaulty++;
 
 	atomicAdd(faultyElems, myFaulty);
+}
+
+extern "C" __global__ void compare_fp8(unsigned char *C, int *faultyElems, size_t iters) {
+        size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+        size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
+                gridDim.x*blockDim.x + // W
+                blockIdx.x*blockDim.x + threadIdx.x; // X
+
+        int myFaulty = 0;
+        for (size_t i = 1; i < iters; ++i) {
+		__nv_fp8x2_storage_t	i1 = *(__nv_fp8x2_storage_t*)(C+myIndex);
+		__nv_fp8x2_storage_t	i2 = *(__nv_fp8x2_storage_t*)(C+myIndex+i*iterStep);
+		__nv_fp8x2_storage_t	di = i1 - i2;
+
+		if ( di & 0x80 ) di &= 0x7F;
+		if ( di > EPSILON_FP8 )
+			myFaulty++;
+	}
+        atomicAdd(faultyElems, myFaulty);
+}
+
+extern "C" __global__ void compare_fp16(unsigned short *C, int *faultyElems, size_t iters) {
+        size_t iterStep = blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+        size_t myIndex = (blockIdx.y*blockDim.y + threadIdx.y)* // Y
+                gridDim.x*blockDim.x + // W
+                blockIdx.x*blockDim.x + threadIdx.x; // X
+
+        int myFaulty = 0;
+        for (size_t i = 1; i < iters; ++i)
+		if ( __habs(__hsub(*(__half*)(C+myIndex), *(__half*)(C+myIndex+i*iterStep))) > EPSILON_FP16 )
+                        myFaulty++;
+
+        atomicAdd(faultyElems, myFaulty);
 }
 
 extern "C" __global__ void compare_r32(float *C, int *faultyElems, size_t iters) {

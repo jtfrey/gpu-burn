@@ -65,6 +65,8 @@ enum {
     data_type_i64,
     data_type_r32,
     data_type_r64,
+    data_type_fp16,
+    data_type_fp8,
     data_type_max
 };
 typedef int data_type_t;
@@ -76,6 +78,8 @@ const char* data_type_strs[] = {
     "INT64",
     "FLOAT",
     "DOUBLE",
+    "__HALF",
+    "__NV_FP8_STORAGE_T",
     NULL
 };
 
@@ -86,6 +90,8 @@ const char* data_type_abbrevs[] = {
     "I64",
     "R32",
     "R64",
+    "FP16",
+    "FP8",
     NULL
 };
 
@@ -96,6 +102,8 @@ const char* data_type_fnnames[] = {
     "compare_i64",
     "compare_r32",
     "compare_r64",
+    "compare_fp16",
+    "compare_fp8",
     NULL
 };
 
@@ -104,6 +112,8 @@ const char* data_type_fnnames[] = {
 #include "cublas_v2.h"
 #define CUDA_ENABLE_DEPRECATED
 #include <cuda.h>
+#include <cuda_fp16.h>
+#include <cuda_fp8.h>
 
 void _checkError(int rCode, std::string file, int line, std::string desc = "") {
     if (rCode != CUDA_SUCCESS) {
@@ -291,7 +301,7 @@ template <class T> class GPU_Test {
                                     (double *)d_Cdata + i * SIZE * SIZE, SIZE),
                         "DGEMM");
                     break;
-                
+
                 default:
                     break;
             }
@@ -835,7 +845,7 @@ void showHelp() {
     printf("-m X\tUse X MB of memory.\n");
     printf("-m N%%\tUse N%% of the available GPU memory.  Default is %d%%\n",
            (int)(USEMEM * 100));
-    printf("-d T\tUse data type, T = (i8, i16, i32, i64, [r32], r64)\n");
+    printf("-d T\tUse data type, T = (i8, i16, i32, i64, [r32], r64, fp16, fp8)\n");
     printf("-tc\tTry to use Tensor cores\n");
     printf("-l\tLists all GPUs in the system\n");
     printf("-i N\tExecute only on GPU N\n");
@@ -1008,6 +1018,14 @@ int main(int argc, char **argv) {
             break;
         case data_type_r64:
             launch<double>(runLength, data_type, useTensorCores, useBytes,
+                       device_id, kernelFile, sigterm_timeout_threshold_secs);
+            break;
+        case data_type_fp16:
+            launch<unsigned short>(runLength, data_type, useTensorCores, useBytes,
+                       device_id, kernelFile, sigterm_timeout_threshold_secs);
+            break;
+        case data_type_fp8:
+            launch<unsigned char>(runLength, data_type, useTensorCores, useBytes,
                        device_id, kernelFile, sigterm_timeout_threshold_secs);
             break;
         default:

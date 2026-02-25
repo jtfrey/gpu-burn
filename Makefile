@@ -1,28 +1,23 @@
-ifneq ("$(wildcard /usr/bin/nvcc)", "")
-CUDAPATH ?= /usr
-else ifneq ("$(wildcard /usr/local/cuda/bin/nvcc)", "")
-CUDAPATH ?= /usr/local/cuda
-endif
-
+CUDA_HOME   ?= /usr/local/cuda
 IS_JETSON   ?= $(shell if grep -Fwq "Jetson" /proc/device-tree/model 2>/dev/null; then echo true; else echo false; fi)
-NVCC        :=  ${CUDAPATH}/bin/nvcc
+NVCC        :=  ${CUDA_HOME}/bin/nvcc
 CCPATH      ?=
 
 override CFLAGS   ?=
 override CFLAGS   += -O3
 override CFLAGS   += -Wno-unused-result
-override CFLAGS   += -I${CUDAPATH}/include
+override CFLAGS   += -I${CUDA_HOME}/include
 override CFLAGS   += -std=c++11
 override CFLAGS   += -DIS_JETSON=${IS_JETSON}
 
 override LDFLAGS  ?=
 override LDFLAGS  += -lcuda
-override LDFLAGS  += -L${CUDAPATH}/lib64
-override LDFLAGS  += -L${CUDAPATH}/lib64/stubs
-override LDFLAGS  += -L${CUDAPATH}/lib
-override LDFLAGS  += -L${CUDAPATH}/lib/stubs
-override LDFLAGS  += -Wl,-rpath=${CUDAPATH}/lib64
-override LDFLAGS  += -Wl,-rpath=${CUDAPATH}/lib
+override LDFLAGS  += -L${CUDA_HOME}/lib64
+override LDFLAGS  += -L${CUDA_HOME}/lib64/stubs
+override LDFLAGS  += -L${CUDA_HOME}/lib
+override LDFLAGS  += -L${CUDA_HOME}/lib/stubs
+override LDFLAGS  += -Wl,-rpath=${CUDA_HOME}/lib64
+override LDFLAGS  += -Wl,-rpath=${CUDA_HOME}/lib
 override LDFLAGS  += -lcublas
 override LDFLAGS  += -lcublasLt
 override LDFLAGS  += -lcudart
@@ -32,7 +27,7 @@ CUDA_VERSION ?= 11.8.0
 IMAGE_DISTRO ?= ubi8
 
 override NVCCFLAGS ?=
-override NVCCFLAGS += -I${CUDAPATH}/include
+override NVCCFLAGS += -I${CUDA_HOME}/include
 override NVCCFLAGS += -arch=compute_$(subst .,,${COMPUTE})
 
 IMAGE_NAME ?= gpu-burn
